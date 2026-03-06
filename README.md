@@ -22,8 +22,8 @@ On the server side, ensure you have it running on a port. I recommend securely g
 
 ### Receiver
 
-3. Clone the project on your receiver computer.
-4. Start the server.
+1. Clone the project on your receiver computer.
+2. Start the server.
 
 ## Data Points
 
