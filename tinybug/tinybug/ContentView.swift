@@ -17,9 +17,22 @@ struct ContentView: View {
             Text("Collection Status").font(.headline)
             ScrollView(.vertical, showsIndicators: false) {
                 HStack {
+                    Text("Target IP:")
+                    Spacer()
+                    TextField("IP Address", text: $collector.targetIPAddress)
+                        .multilineTextAlignment(.trailing)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                }.padding(.horizontal)
+                
+                HStack {
                     Text("Background Tracking:")
                     Spacer()
-                    Text("Inactive").foregroundColor(.red).bold()
+                    if collector.isMonitoring {
+                        Text("Active").foregroundColor(.green).bold()
+                    } else {
+                        Text("Inactive").foregroundColor(.red).bold()
+                    }
                 }.padding(.horizontal)
                 
                 HStack {
@@ -65,6 +78,45 @@ struct ContentView: View {
                     }
                     .padding(.horizontal)
                 }
+                
+                if let telemetry = collector.lastTelemetry {
+                    VStack(alignment: .leading) {
+                        Text("Last Telemetry:")
+                            .font(.headline)
+                        
+                        ScrollView {
+                            Text(telemetry)
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                        }
+                        .frame(height: 200)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                }
+                
+                if let apiResponse = collector.lastAPIResponse {
+                    VStack(alignment: .leading) {
+                        Text("Last API Response:")
+                            .font(.headline)
+                        
+                        ScrollView {
+                            Text(apiResponse)
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                        }
+                        .frame(height: 50)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                }
+                
                 Spacer()
             }
         }

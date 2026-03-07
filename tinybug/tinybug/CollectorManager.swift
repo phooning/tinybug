@@ -15,13 +15,18 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
     
     private let locationManager = CLLocationManager()
     
-    // TODO: Replace with your own endpoint.
-    private let endpointURL = URL(string: "http://100.0.0.1:8080/ingest")!
+    @Published var targetIPAddress: String = "localhost"
+    @Published var lastAPIResponse: String?
+    
+    private var endpointURL: URL {
+        URL(string: "http://\(targetIPAddress):8069/ingest")!
+    }
     
     private var backgroundSession: URLSession!
     
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var isMonitoring = false
+    @Published var lastTelemetry: String?
     
     override init() {
         super.init()
@@ -53,7 +58,7 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
         isMonitoring = false
     }
     
-    func locationManager(_ manager: CLLocationManager) {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         DispatchQueue.main.async {
             self.authorizationStatus = manager.authorizationStatus
             if self.authorizationStatus == .authorizedAlways {
@@ -64,6 +69,11 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
         print("Location updated failed: \(error)")
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        sendTelemtery(for: location)
     }
     
     private func sendTelemtery(for location: CLLocation) {
@@ -90,7 +100,12 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
             ]
         ]
         
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload, options: []) else { return }
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted]) else { return }
+        if let jsonString = String(data: jsonData, encoding: .utf8) {
+            DispatchQueue.main.async {
+                self.lastTelemetry = jsonString
+            }
+        }
         
         var request = URLRequest(url: endpointURL)
         request.httpMethod = "POST"
@@ -108,6 +123,14 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
+        let response = task.response as? HTTPURLResponse
+        let statusCode = response?.statusCode
+        let statusString = error != nil ? "Error: \(error!.localizedDescription)" : "Status: \(statusCode?.description ?? "Unknown")"
+        
+        DispatchQueue.main.async {
+            self.lastAPIResponse = statusString
+        }
+        
         if let path = task.taskDescription {
             let fileURL = URL(fileURLWithPath: path)
             try? FileManager.default.removeItem(at: fileURL)

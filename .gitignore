@@ -1,0 +1,4 @@
+tinybug-server/target
+tinybug-server/debug
+**/*.rs.bk
+
