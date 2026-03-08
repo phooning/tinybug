@@ -51,6 +51,13 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
         guard locationManager.authorizationStatus == .authorizedAlways || locationManager.authorizationStatus == .authorizedWhenInUse else { return }
         locationManager.startMonitoringSignificantLocationChanges()
         isMonitoring = true
+        
+        // Force an immediate API request with the current/latest location
+        if let location = locationManager.location {
+            sendTelemetry(for: location)
+        } else {
+            locationManager.requestLocation()
+        }
     }
     
     func stopMonitoring() {
@@ -73,10 +80,10 @@ class CollectorManager: NSObject, ObservableObject, CLLocationManagerDelegate, U
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        sendTelemtery(for: location)
+        sendTelemetry(for: location)
     }
     
-    private func sendTelemtery(for location: CLLocation) {
+    private func sendTelemetry(for location: CLLocation) {
         UIDevice.current.isBatteryMonitoringEnabled = true
         let device = UIDevice.current
         let payload: [String: Any] = [
